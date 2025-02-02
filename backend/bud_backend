@@ -1,0 +1,52 @@
+import torch
+from transformers import TextStreamer
+from unsloth import FastLanguageModel
+
+# Model initialization
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="fine_tuned_llama_samantha_bud",  
+    max_seq_length=4096,
+    dtype=torch.bfloat16,
+    load_in_4bit=True,
+    device_map="auto",
+)
+
+FastLanguageModel.for_inference(model)
+text_streamer = TextStreamer(tokenizer)
+
+def generate_response(prompt, max_new_tokens=512, temperature=0.7):
+    formatted_prompt = f"<|system|> You are BUD, an AI designed for mental health support.\n<|user|> {prompt}\n<|assistant|> "
+    inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            streamer=text_streamer,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            pad_token_id=tokenizer.eos_token_id,
+            do_sample=True,
+            top_p=0.95,
+            top_k=50,
+        )
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    response = response.split("<|assistant|>")[-1].strip()
+    return response
+
+def chat_interface():
+    print("Welcome to BUD Chat! Type 'quit' or 'exit' to end the conversation.")
+    print("How are you feeling today?\n")
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() in ['quit', 'exit']:
+            print("\nBUD: Take care! Remember, I'm here if you need to talk.")
+            break
+        
+        if user_input:  
+            print("\nBUD:", end=" ")
+            response = generate_response(user_input)
+            print()  # Add a newline after the response
+
+if __name__ == "__main__":
+    chat_interface()
