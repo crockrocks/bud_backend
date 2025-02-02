@@ -15,12 +15,15 @@ class Character(Enum):
     DEADPOOL = "deadpool"
 
 class CharacterChat:
-    def __init__(self, character_type: Character):
+    def __init__(self, character_type: Character, user_personality: str):
         """Initialize the character chat system with Groq integration."""
         self.character_type = character_type
-        self.json_path = f"{character_type.value}.json"
+        self.user_personality = user_personality  # MBTI Type
+        # self.json_path = f"{character_type.value}.json"
         self.character_data = self.load_character_data()
         self.context = self.character_data.get('context', '')
+
+        self.personality_context = self.load_personality_context()
         
         # Initialize Groq LLM
         api_key = os.getenv("GROQ_API_KEY")
@@ -42,18 +45,30 @@ class CharacterChat:
 
     def load_character_data(self) -> Dict:
         """Load character data from JSON file."""
+        json_path = f"{self.character_type.value}.json"
         try:
-            with open(self.json_path, 'r', encoding='utf-8') as file:
+            with open(json_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
         except FileNotFoundError:
-            raise FileNotFoundError(f"Character data file not found: {self.json_path}")
+            raise FileNotFoundError(f"Character data file not found: {json_path}")
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON format in character data file")
+    
+    def load_personality_context(self) -> str:
+        """Load user personality context based on MBTI type from JSON."""
+        try:
+            with open("personality_contexts.json", "r", encoding="utf-8") as file:
+                personality_data = json.load(file)
+            return personality_data.get(self.user_personality, "You are a balanced individual.")
+        except FileNotFoundError:
+            raise FileNotFoundError("Personality context file not found: personality_contexts.json")
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON format in personality context file")
 
     def create_prompt_template(self) -> PromptTemplate:
         """Create character-specific prompt template."""
         if self.character_type == Character.LUFFY:
-            template = """
+            template = f"""
             You are Monkey D. Luffy from One Piece. Stay in character with these traits:
             - Energetic and optimistic
             - Simple-minded but determined
@@ -62,14 +77,18 @@ class CharacterChat:
             - Uses phrases like "Shishishi!" and "I'm gonna be the Pirate King!"
             - Loyal to friends and crew
             
-            Context from previous interactions: {context}
+            The user has the personality type: {self.user_personality}.
+            This means:
+            {self.personality_context}
+
+            Context from previous interactions: {{context}}
             
-            Human: {user_input}
+            Human: {{user_input}}
             
             Respond as Luffy would:
             """
         else:  # Deadpool
-            template = """
+            template = f"""
             You are Deadpool. Stay in character with these traits:
             - Witty and sarcastic
             - Breaks the fourth wall
@@ -78,9 +97,13 @@ class CharacterChat:
             - Self-aware of being in a chat program
             - Loves chimichangas
             
-            Context from previous interactions: {context}
+            The user has the personality type: {self.user_personality}.
+            This means:
+            {self.personality_context}
+
+            Context from previous interactions: {{context}}
             
-            Human: {user_input}
+            Human: {{user_input}}
             
             Respond as Deadpool would:
             """
@@ -126,6 +149,19 @@ def select_character() -> Character:
         else:
             print("Invalid choice! Please select 1 or 2.")
 
+def get_user_personality() -> str:
+    """get the response from questionnaire on frontend """
+    personality_types = [
+        "ISTJ", "ISFJ", "INFJ", "INTJ", "ISTP", "ISFP", "INFP", "INTP",
+        "ESTP", "ESFP", "ENFP", "ENTP", "ESTJ", "ESFJ", "ENFJ", "ENTJ"
+    ]
+    
+    while True:
+        personality = input("\nEnter your MBTI personality type (e.g., INFJ, ENTP): ").strip().upper()
+        if personality in personality_types:
+            return personality
+        print("Invalid MBTI type. Please enter a valid personality type.")
+
 def get_character_greeting(character: Character) -> str:
     """Get character-specific greeting."""
     if character == Character.LUFFY:
@@ -137,7 +173,9 @@ def main():
     try:
         print("Welcome to the Character Chat System!")
         selected_character = select_character()
-        chat_system = CharacterChat(selected_character)
+        user_personality = get_user_personality()
+
+        chat_system = CharacterChat(selected_character, user_personality)
         print(f"\n{get_character_greeting(selected_character)}")
         
         while True:
