@@ -1,3 +1,7 @@
-langchain
-langchain_groq
+flask
+unsloth
+langchain-groq
 python-dotenv
+torch
+transformers
+xformers

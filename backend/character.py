@@ -7,7 +7,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 
-# Load environment variables
+
 load_dotenv()
 
 class Character(Enum):
@@ -18,7 +18,7 @@ class CharacterChat:
     def __init__(self, character_type: Character, user_personality: str):
         """Initialize the character chat system with Groq integration."""
         self.character_type = character_type
-        self.user_personality = user_personality  # MBTI Type
+        self.user_personality = user_personality
         # self.json_path = f"{character_type.value}.json"
         self.character_data = self.load_character_data()
         self.context = self.character_data.get('context', '')
@@ -33,18 +33,16 @@ class CharacterChat:
         os.environ["GROQ_API_KEY"] = api_key
         self.llm = ChatGroq(
             model="mixtral-8x7b-32768",
-            temperature=0.7,  # Higher temperature for more creative responses
+            temperature=0.7, 
             max_tokens=None,
             timeout=None,
             max_retries=2,
         )
         
-        # Create character-specific prompt template
         self.prompt_template = self.create_prompt_template()
         self.chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
 
     def load_character_data(self) -> Dict:
-        """Load character data from JSON file."""
         json_path = f"{self.character_type.value}.json"
         try:
             with open(json_path, 'r', encoding='utf-8') as file:
@@ -55,7 +53,6 @@ class CharacterChat:
             raise ValueError("Invalid JSON format in character data file")
     
     def load_personality_context(self) -> str:
-        """Load user personality context based on MBTI type from JSON."""
         try:
             with open("personality_contexts.json", "r", encoding="utf-8") as file:
                 personality_data = json.load(file)
@@ -66,7 +63,6 @@ class CharacterChat:
             raise ValueError("Invalid JSON format in personality context file")
 
     def create_prompt_template(self) -> PromptTemplate:
-        """Create character-specific prompt template."""
         if self.character_type == Character.LUFFY:
             template = f"""
             You are Monkey D. Luffy from One Piece. Stay in character with these traits:
@@ -114,7 +110,6 @@ class CharacterChat:
         )
 
     def get_response(self, user_input: str) -> str:
-        """Get AI-generated response to user input."""
         if not user_input.strip():
             if self.character_type == Character.LUFFY:
                 return "Oi! Say something! I can't hear you!"
@@ -128,14 +123,12 @@ class CharacterChat:
             })
             return response.strip()
         except Exception as e:
-            # Fallback responses in case of API issues
             if self.character_type == Character.LUFFY:
                 return "Shishishi! My Den Den Mushi is acting weird! Can you repeat that?"
             else:
                 return "Whoa, looks like the writers are having technical difficulties! *winks at camera*"
 
 def select_character() -> Character:
-    """Let user select which character to chat with."""
     while True:
         print("\nSelect a character to chat with:")
         print("1. Monkey D. Luffy")
@@ -150,7 +143,6 @@ def select_character() -> Character:
             print("Invalid choice! Please select 1 or 2.")
 
 def get_user_personality() -> str:
-    """get the response from questionnaire on frontend """
     personality_types = [
         "ISTJ", "ISFJ", "INFJ", "INTJ", "ISTP", "ISFP", "INFP", "INTP",
         "ESTP", "ESFP", "ENFP", "ENTP", "ESTJ", "ESFJ", "ENFJ", "ENTJ"
@@ -163,7 +155,6 @@ def get_user_personality() -> str:
         print("Invalid MBTI type. Please enter a valid personality type.")
 
 def get_character_greeting(character: Character) -> str:
-    """Get character-specific greeting."""
     if character == Character.LUFFY:
         return "Yo! I'm Monkey D. Luffy, and I'm gonna be the Pirate King!"
     else:
