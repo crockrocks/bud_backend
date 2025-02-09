@@ -1,7 +1,7 @@
 flask
-unsloth
+flask-cors
+pymongo
+firebase-admin
+langchain
 langchain-groq
 python-dotenv
-torch
-transformers
-xformers
